@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>BLE Tracker Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f5f7fb;
+        }
+
+        .tracker-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: 0.2s ease;
+        }
+
+        .tracker-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            font-size: 14px;
+            padding: 8px 12px;
+        }
+
+        .receiver-box {
+            border-radius: 12px;
+            background: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .main-title {
+            font-weight: 700;
+        }
+
+        .signal {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .updated-time {
+            font-size: 12px;
+            color: gray;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="main-title">BLE Tracker Dashboard</h1>
+                <p class="text-muted mb-0">
+                    Real-time indoor tracking system
+                </p>
+            </div>
+
+            <div>
+                <span class="badge bg-success p-3">
+                    LIVE
+                </span>
+            </div>
+        </div>
+
+        <div id="trackersRow" class="row g-4"></div>
+
+    </div>
+
+
+    <script>
+
+        const API_URL = "https://tracker-backend-1djh.onrender.com/devices";
+
+
+        function getStatusColor(status) {
+
+            if (status === "Very Near") return "success";
+
+            if (status === "Near") return "primary";
+
+            if (status === "Medium") return "warning";
+
+            return "danger";
+        }
+
+
+        async function fetchTrackers() {
+
+            try {
+
+                const response = await fetch(API_URL);
+
+                const data = await response.json();
+
+                renderTrackers(data);
+
+            }
+            catch (err) {
+
+                console.log(err);
+            }
+        }
+
+
+        function renderTrackers(trackers) {
+
+            const container = document.getElementById("trackersRow");
+
+            container.innerHTML = "";
+
+// if (tracker.receivers) 
+
+            Object.keys(trackers).forEach((trackerName) => {
+
+                const tracker = trackers[trackerName];
+
+                let receiversHTML = "";
+
+
+                Object.keys(tracker.receivers).forEach((receiverName) => {
+
+                    const receiver = tracker.receivers[receiverName];
+
+                    receiversHTML += `
+
+                        <div class="receiver-box">
+
+                            <div class="d-flex justify-content-between">
+                                <strong>${receiverName}</strong>
+                                <span>${receiver.rssi} dBm</span>
+                            </div>
+
+                            <div>
+                                Location: ${receiver.location}
+                            </div>
+
+                            <div class="updated-time">
+                                ${new Date(receiver.timestamp).toLocaleTimeString()}
+                            </div>
+
+                        </div>
+                    `;
+                });
+
+
+                container.innerHTML += `
+
+                    <div class="col-12 col-md-6 col-lg-4">
+
+                        <div class="card tracker-card p-3 h-100">
+
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+
+                                <div>
+                                    <h3>${trackerName}</h3>
+
+                                    <div class="text-muted">
+                                        Current Location
+                                    </div>
+
+                                    <h5>
+                                        ${tracker.currentLocation}
+                                    </h5>
+                                </div>
+
+
+                                <span class="badge bg-${getStatusColor(tracker.status)} status-badge">
+                                    ${tracker.status}
+                                </span>
+                            </div>
+
+
+                            <div class="mb-3">
+
+                                <div class="text-muted mb-1">
+                                    Strongest Signal
+                                </div>
+
+                                <div class="signal">
+                                    ${tracker.bestRSSI} dBm
+                                </div>
+                            </div>
+
+
+                            <div class="mb-3">
+                                <strong>Nearest Receiver:</strong>
+                                ${tracker.nearestReceiver}
+                            </div>
+
+
+                            <hr />
+
+
+                            <div>
+                                <h6 class="mb-3">
+                                    Receiver Signals
+                                </h6>
+
+                                ${receiversHTML}
+                            </div>
+
+                        </div>
+                    </div>
+                `;
+            }
+        );
+        }
+
+        
+        fetchTrackers();
+
+
+        // AUTO REFRESH EVERY SECOND
+        setInterval(fetchTrackers, 1000);
+
+    </script>
+
+</body>
+
+</html>
+
+
+
+
+<!-- sample --------------------------------- -->
+
+<!-- <!DOCTYPE html>
+<html>
+
+<head>
+    <title>BLE Tracker Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>BLE Tracker Dashboard</h1>
+
+    <div id="devices"></div>
+
+    <script>
+
+        const API_URL = "https://tracker-backend-1djh.onrender.com/devices";
+
+        async function fetchDevices() {
+
+            try {
+
+                const response = await fetch(API_URL);
+
+                const data = await response.json();
+
+                const container = document.getElementById("devices");
+
+                container.innerHTML = "";
+
+                Object.keys(data).forEach(deviceName => {
+
+                    const device = data[deviceName];
+
+                    container.innerHTML += `
+                        <div class="card">
+                            <h3>${deviceName}</h3>
+                            <p>Receiver: ${device.receiver}</p>
+                            <p>RSSI: ${device.rssi}</p>
+                            <p>Updated: ${device.timestamp}</p>
+                        </div>
+                    `;
+                });
+
+            } catch (err) {
+
+                console.log(err);
+
+            }
+        }
+
+        fetchDevices();
+
+        setInterval(fetchDevices, 1000);
+
+    </script>
+
+</body>
+
+</html> -->

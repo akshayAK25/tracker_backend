@@ -71,7 +71,11 @@ TARGET_DEVICES = [
     "tracker2"
 ]
 
-API_URL = "http://localhost:3000/rssi"
+# API_URL = "http://localhost:3000/rssi"
+API_URL = "https://tracker-backend-1djh.onrender.com/rssi"
+
+RECEIVER_NAME = "Laptop1"
+LOCATION = "Hall"
 
 async def scan():
 
@@ -89,9 +93,11 @@ async def scan():
             if device.name and device.name.lower() in TARGET_DEVICES:
 
                 data = {
-                    "receiver": "LaptopReceiver1",
+                    "receiver": RECEIVER_NAME,
                     "device": device.name,
-                    "rssi": adv.rssi
+                    "rssi": adv.rssi,
+                    "location": LOCATION,
+
                 }
 
                 print(data)
