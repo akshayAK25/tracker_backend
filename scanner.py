@@ -63,6 +63,7 @@
 
 
 import asyncio
+from urllib import response
 import requests
 from bleak import BleakScanner
 
@@ -77,8 +78,8 @@ TARGET_DEVICES = [
 # API_URL = "http://localhost:3000/rssi"
 API_URL = "https://tracker-backend-1djh.onrender.com/rssi"
 
-RECEIVER_NAME = "Laptop1"
-LOCATION = "Hall"
+RECEIVER_NAME = "A1"
+# LOCATION = "Hall"
 
 async def scan():
 
@@ -98,9 +99,7 @@ async def scan():
                 data = {
                     "receiver": RECEIVER_NAME,
                     "device": device.name,
-                    "rssi": adv.rssi,
-                    "location": LOCATION,
-                
+                    "rssi": adv.rssi,                
                 }
 
                 print(data)
@@ -113,7 +112,8 @@ async def scan():
                     )
 
                     print("Sent:", response.status_code)
-
+                    print(response.status_code)
+                    print(response.text)
                 except Exception as e:
 
                     print("API Error:", e)

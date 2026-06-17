@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const mongo= require("mongoose");
 const TrackerHistory =require("./models/TrackerHistory");
+const Device = require("./models/Device");
+const Antenna = require("./models/Antenna");
 const app = express();
 
 app.use(cors());
@@ -55,14 +57,32 @@ app.post("/rssi", async (req, res) => {
 
     const {
         receiver,
-        location,
         device,
         rssi
     } = req.body;
 
+
+    const antenna =await Antenna.findOne({antennaId: receiver});
+    if (!antenna) {
+        return res.status(404).json({
+            message: `Unknown antenna ${receiver}`
+        });
+    }
+
+
+    const deviceInfo =await Device.findOne({tagId: device});
+    if (!deviceInfo) {
+        return res.status(404).json({
+            message: `Unknown device ${device}`
+        });
+    }
+
+    const location = antenna.location;
+    const deviceName = deviceInfo.deviceName;
+
     // create tracker if not exists
-    if (!trackers[device]) {
-        trackers[device] = {
+    if (!trackers[deviceName]) {
+        trackers[deviceName] = {
             currentLocation: null,
             bestRSSI: null,
             nearestReceiver: null,
@@ -79,13 +99,13 @@ app.post("/rssi", async (req, res) => {
     }
 
     // update receiver data
-    trackers[device].receivers[receiver] = {
+    trackers[deviceName].receivers[receiver] = {
         location,
         rssi,
         timestamp: new Date()
     };
 
-            const previousLocation =trackers[device].currentLocation;        
+    const previousLocation =trackers[deviceName].currentLocation;        
 
 
     // determine strongest signal
@@ -93,28 +113,29 @@ app.post("/rssi", async (req, res) => {
     let bestReceiver = null;
     let bestLocation = null;
 
-    for (const receiverName in trackers[device].receivers) {
+    for (const receiverName in trackers[deviceName].receivers) {
 
-        const receiverData =trackers[device].receivers[receiverName];
+        const receiverData =trackers[deviceName].receivers[receiverName];
 
         if (receiverData.rssi > strongestRSSI) {
             strongestRSSI = receiverData.rssi;
             bestReceiver = receiverName;
             bestLocation = receiverData.location;
-
             
         }
     }
 
+
     // update processed tracker info
     
-    trackers[device].bestRSSI = strongestRSSI;
-    trackers[device].nearestReceiver = bestReceiver;
-    trackers[device].currentLocation = bestLocation;
+    trackers[deviceName].bestRSSI = strongestRSSI;
+    trackers[deviceName].nearestReceiver = bestReceiver;
+    trackers[deviceName].currentLocation = bestLocation;
 
     if (previousLocation !== null &&previousLocation !== bestLocation) {
     await TrackerHistory.create({
         device,
+        deviceName,
         location: bestLocation,
         receiver: bestReceiver,
         timestamp: new Date()
@@ -123,7 +144,7 @@ app.post("/rssi", async (req, res) => {
     console.log(`${device} moved from ${previousLocation} to ${bestLocation}`);
 }
 
-    trackers[device].status =getSignalStatus(strongestRSSI);
+    trackers[deviceName].status =getSignalStatus(strongestRSSI);
 
     console.log("\n=== TRACKERS ===");
 
@@ -141,16 +162,87 @@ app.get("/devices", (req, res) => {
     res.json(trackers);
 });
 
-app.listen(3000, () => {
 
-    console.log("Server running on port 3000");
+
+app.get("/history/:device", async (req, res) => {
+
+    const history =
+        await TrackerHistory.find({
+
+            device: req.params.device
+
+        })
+        .sort({ timestamp: -1 });
+
+    res.json(history);
+});
+
+
+// to update devices------------------
+
+app.post("/device", async (req, res) => {
+
+    // console.log(req);
+
+    const {
+        tagId,
+        deviceName
+    } = req.body;
+
+    const device =
+        await Device.findOneAndUpdate({ tagId },{ deviceName },{upsert: true,new: true});
+    res.json(device);
+
+});
+
+// update antenna -----------------------------
+
+
+app.post("/antenna", async (req, res) => {
+
+    const {
+        antennaId,
+        location
+    } = req.body;
+
+    const antenna =
+        await Antenna.findOneAndUpdate(
+            { antennaId },
+            { location },
+            {
+                upsert: true,
+                new: true
+            }
+        );
+
+    res.json(antenna);
 });
 
 
 
+// alll devices 
+app.get("/devices-map", async (req, res) => {
 
+    const devices =
+        await Device.find();
 
+    res.json(devices);
+});
 
+// all antennas
+
+app.get("/antennas", async (req, res) => {
+
+    const antennas =
+        await Antenna.find();
+
+    res.json(antennas);
+});
+
+app.listen(3000, () => {
+
+    console.log("Server running on port 3000");
+});
 
 
 //  old og ----------------------------------------
