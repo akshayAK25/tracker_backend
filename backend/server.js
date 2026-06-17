@@ -101,7 +101,7 @@ app.post("/rssi", (req, res) => {
             bestReceiver = receiverName;
             bestLocation = receiverData.location;
 
-            if (previousLocation &&previousLocation !== bestLocation) 
+            if (previousLocation && previousLocation !== bestLocation) 
             {   
                 TrackerHistory.create({
                     device,

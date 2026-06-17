@@ -74,8 +74,8 @@ TARGET_DEVICES = [
     "md5",
 ] 
 
-API_URL = "http://localhost:3000/rssi"
-# API_URL = "https://tracker-backend-1djh.onrender.com/rssi"
+# API_URL = "http://localhost:3000/rssi"
+API_URL = "https://tracker-backend-1djh.onrender.com/rssi"
 
 RECEIVER_NAME = "Laptop1"
 LOCATION = "Hall"
