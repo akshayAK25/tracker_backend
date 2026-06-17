@@ -43,7 +43,6 @@ DATA STRUCTURE
 */
 
 let trackers = {};
-let previousLocation
 
 function getSignalStatus(rssi) {
     if (rssi >= -50) return "Very Near";
@@ -52,7 +51,7 @@ function getSignalStatus(rssi) {
     return "Far";
 }
 
-app.post("/rssi", (req, res) => {
+app.post("/rssi", async (req, res) => {
 
     const {
         receiver,
@@ -70,8 +69,7 @@ app.post("/rssi", (req, res) => {
             status: null,
             receivers: {}
         };
-        previousLocation =trackers[device].currentLocation;
-        TrackerHistory.create({
+        await TrackerHistory.create({
                 device,
                 location,
                 receiver,
@@ -87,6 +85,9 @@ app.post("/rssi", (req, res) => {
         timestamp: new Date()
     };
 
+            const previousLocation =trackers[device].currentLocation;        
+
+
     // determine strongest signal
     let strongestRSSI = -999;
     let bestReceiver = null;
@@ -101,19 +102,7 @@ app.post("/rssi", (req, res) => {
             bestReceiver = receiverName;
             bestLocation = receiverData.location;
 
-            if (previousLocation && previousLocation !== bestLocation) 
-            {   
-                TrackerHistory.create({
-                    device,
-                    location: bestLocation,
-                    receiver: bestReceiver,
-                    timestamp: new Date()
-                });
-
-                console.log(
-                    `${device} moved from ${previousLocation} to ${bestLocation}`
-                );
-            }
+            
         }
     }
 
@@ -122,6 +111,18 @@ app.post("/rssi", (req, res) => {
     trackers[device].bestRSSI = strongestRSSI;
     trackers[device].nearestReceiver = bestReceiver;
     trackers[device].currentLocation = bestLocation;
+
+    if (previousLocation !== null &&previousLocation !== bestLocation) {
+    await TrackerHistory.create({
+        device,
+        location: bestLocation,
+        receiver: bestReceiver,
+        timestamp: new Date()
+    });
+
+    console.log(`${device} moved from ${previousLocation} to ${bestLocation}`);
+}
+
     trackers[device].status =getSignalStatus(strongestRSSI);
 
     console.log("\n=== TRACKERS ===");
