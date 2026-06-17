@@ -1,11 +1,20 @@
 const express = require("express");
 const cors = require("cors");
-
+const mongo= require("mongoose");
+const TrackerHistory =require("./models/TrackerHistory");
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+mongo.connect("mongodb+srv://akshaypanaganti9395_db_user:ak25082003@cluster0.d6pk7ny.mongodb.net/?appName=Cluster0").then(()=>{
+    console.log("db connected");
+})
+.catch((e)=>{
+console.log(e.message);
+})
+// mongodb+srv://akshaypanaganti9395_db_user:ak25082003@cluster0.d6pk7ny.mongodb.net/?appName=Cluster0
+// mongodb+srv://akshaypanaganti9395_db_user:ak25082003@cluster0.d6pk7ny.mongodb.net/?appName=Cluster0
 /*
 DATA STRUCTURE
 
@@ -34,15 +43,12 @@ DATA STRUCTURE
 */
 
 let trackers = {};
+let previousLocation
 
 function getSignalStatus(rssi) {
-
     if (rssi >= -50) return "Very Near";
-
     if (rssi >= -65) return "Near";
-
     if (rssi >= -80) return "Medium";
-
     return "Far";
 }
 
@@ -57,7 +63,6 @@ app.post("/rssi", (req, res) => {
 
     // create tracker if not exists
     if (!trackers[device]) {
-
         trackers[device] = {
             currentLocation: null,
             bestRSSI: null,
@@ -65,11 +70,18 @@ app.post("/rssi", (req, res) => {
             status: null,
             receivers: {}
         };
+        previousLocation =trackers[device].currentLocation;
+        TrackerHistory.create({
+                device,
+                location,
+                receiver,
+                timestamp: new Date()
+            });
+
     }
 
     // update receiver data
     trackers[device].receivers[receiver] = {
-
         location,
         rssi,
         timestamp: new Date()
@@ -82,28 +94,35 @@ app.post("/rssi", (req, res) => {
 
     for (const receiverName in trackers[device].receivers) {
 
-        const receiverData =
-            trackers[device].receivers[receiverName];
+        const receiverData =trackers[device].receivers[receiverName];
 
         if (receiverData.rssi > strongestRSSI) {
-
             strongestRSSI = receiverData.rssi;
-
             bestReceiver = receiverName;
-
             bestLocation = receiverData.location;
+
+            if (previousLocation &&previousLocation !== bestLocation) 
+            {   
+                TrackerHistory.create({
+                    device,
+                    location: bestLocation,
+                    receiver: bestReceiver,
+                    timestamp: new Date()
+                });
+
+                console.log(
+                    `${device} moved from ${previousLocation} to ${bestLocation}`
+                );
+            }
         }
     }
 
     // update processed tracker info
+    
     trackers[device].bestRSSI = strongestRSSI;
-
     trackers[device].nearestReceiver = bestReceiver;
-
     trackers[device].currentLocation = bestLocation;
-
-    trackers[device].status =
-        getSignalStatus(strongestRSSI);
+    trackers[device].status =getSignalStatus(strongestRSSI);
 
     console.log("\n=== TRACKERS ===");
 
@@ -114,6 +133,8 @@ app.post("/rssi", (req, res) => {
     });
 });
 
+
+
 app.get("/devices", (req, res) => {
 
     res.json(trackers);
@@ -123,6 +144,13 @@ app.listen(3000, () => {
 
     console.log("Server running on port 3000");
 });
+
+
+
+
+
+
+
 
 //  old og ----------------------------------------
 

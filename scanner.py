@@ -66,13 +66,16 @@ import asyncio
 import requests
 from bleak import BleakScanner
 
-TARGET_DEVICES = [
-    "tracker1",
-    "tracker2"
-]
+TARGET_DEVICES = [ 
+    "md1",
+    "md2",
+    "md3",
+    "md4",
+    "md5",
+] 
 
-# API_URL = "http://localhost:3000/rssi"
-API_URL = "https://tracker-backend-1djh.onrender.com/rssi"
+API_URL = "http://localhost:3000/rssi"
+# API_URL = "https://tracker-backend-1djh.onrender.com/rssi"
 
 RECEIVER_NAME = "Laptop1"
 LOCATION = "Hall"
@@ -83,7 +86,7 @@ async def scan():
 
         devices = await BleakScanner.discover(
             return_adv=True,
-            timeout=5.0
+            timeout=2.0
         )
 
         print("\n--- TRACKERS FOUND ---")
@@ -97,7 +100,7 @@ async def scan():
                     "device": device.name,
                     "rssi": adv.rssi,
                     "location": LOCATION,
-
+                
                 }
 
                 print(data)
@@ -118,8 +121,6 @@ async def scan():
         await asyncio.sleep(2)
 
 asyncio.run(scan())
-
-
 
 
 
